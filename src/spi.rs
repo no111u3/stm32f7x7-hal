@@ -9,7 +9,7 @@ use crate::pac::{SPI1, SPI2, SPI3};
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 use crate::gpio::gpiob::{PB10, PB15};
 use crate::gpio::gpioc::{PC10, PC11, PC12, PC2};
-use crate::gpio::AF5;
+use crate::gpio::{Alternate, AF5};
 use crate::rcc::{APB1, APB2, Clocks};
 use crate::time::Hertz;
 
@@ -37,19 +37,19 @@ pub unsafe trait MisoPin<SPI> {}
 pub unsafe trait MosiPin<SPI> {}
 
 // SPI1_SSEL - PA4
-unsafe impl SckPin<SPI1> for PA5<AF5> {}
-unsafe impl MisoPin<SPI1> for PA6<AF5> {}
-unsafe impl MosiPin<SPI1> for PA7<AF5> {}
+unsafe impl SckPin<SPI1> for PA5<Alternate<AF5>> {}
+unsafe impl MisoPin<SPI1> for PA6<Alternate<AF5>> {}
+unsafe impl MosiPin<SPI1> for PA7<Alternate<AF5>> {}
 
 // SPI2_SSEL - PB4
-unsafe impl SckPin<SPI2> for PB10<AF5> {}
-unsafe impl MisoPin<SPI2> for PC2<AF5> {}
-unsafe impl MosiPin<SPI2> for PB15<AF5> {}
+unsafe impl SckPin<SPI2> for PB10<Alternate<AF5>> {}
+unsafe impl MisoPin<SPI2> for PC2<Alternate<AF5>> {}
+unsafe impl MosiPin<SPI2> for PB15<Alternate<AF5>> {}
 
 // SPI3_SSEL - PA15
-unsafe impl SckPin<SPI3> for PC10<AF5> {}
-unsafe impl MisoPin<SPI3> for PC11<AF5> {}
-unsafe impl MosiPin<SPI3> for PC12<AF5> {}
+unsafe impl SckPin<SPI3> for PC10<Alternate<AF5>> {}
+unsafe impl MisoPin<SPI3> for PC11<Alternate<AF5>> {}
+unsafe impl MosiPin<SPI3> for PC12<Alternate<AF5>> {}
 
 /// SPI peripheral operating in full duplex master mode
 pub struct Spi<SPI, PINS> {
