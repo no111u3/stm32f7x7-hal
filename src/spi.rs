@@ -58,91 +58,78 @@ pub struct Spi<SPI, PINS> {
 }
 
 macro_rules! hal {
-    ($($SPIX:ident: ($spiX:ident, $APBX:ident, $spiXen:ident, $spiXrst:ident, $pclkX:ident),)+) => {
+    ($($SPIX:ident: ($spiX:ident, $spiXen:ident, $spiXrst:ident, $APB:ident),)+) => {
         $(
             impl<SCK, MISO, MOSI> Spi<$SPIX, (SCK, MISO, MOSI)> {
-                /// Configures the SPI peripheral to operate in full duplex master mode
-                pub fn $spiX<F>(
+                pub fn $spiX(
                     spi: $SPIX,
                     pins: (SCK, MISO, MOSI),
                     mode: Mode,
-                    freq: F,
+                    freq: Hertz,
                     clocks: Clocks,
-                    apb2: &mut $APBX,
+                    apb: &mut $APB,
                 ) -> Self
                 where
-                    F: Into<Hertz>,
                     SCK: SckPin<$SPIX>,
                     MISO: MisoPin<$SPIX>,
                     MOSI: MosiPin<$SPIX>,
                 {
                     // enable or reset $SPIX
-                    apb2.enr().modify(|_, w| w.$spiXen().enabled());
-                    apb2.rstr().modify(|_, w| w.$spiXrst().set_bit());
-                    apb2.rstr().modify(|_, w| w.$spiXrst().clear_bit());
+                    apb.enr().modify(|_, w| w.$spiXen().enabled());
+                    apb.rstr().modify(|_, w| w.$spiXrst().set_bit());
+                    apb.rstr().modify(|_, w| w.$spiXrst().clear_bit());
 
-                    // FRXTH: RXNE event is generated if the FIFO level is greater than or equal to
-                    //        8-bit
-                    // DS: 8-bit data size
-                    // SSOE: Slave Select output disabled
-                    spi.cr2
-                        .write(|w| unsafe {
-                            w.frxth().set_bit().ds().bits(0b111).ssoe().clear_bit()
-                        });
+                    // TODO - probably should do a proper shutdown, 35.5.9
+                    // disable the SPI peripheral
+                    spi.cr1.write(|w| w.spe().clear_bit());
 
-                    let br = match clocks.$pclkX().0 / freq.into().0 {
+                    // disable SS output
+                    spi.cr2.write(|w| w.ssoe().clear_bit());
+
+                    let br = match clocks.pclk2().0 / freq.0 {
                         0 => unreachable!(),
-                        1...2 => 0b000,
-                        3...5 => 0b001,
+                        1...2 => 0b000, // pclk/2
+                        3...5 => 0b001, // pclk/4
                         6...11 => 0b010,
                         12...23 => 0b011,
-                        24...39 => 0b100,
-                        40...95 => 0b101,
-                        96...191 => 0b110,
-                        _ => 0b111,
+                        24...47 => 0b100,
+                        48...95 => 0b101,
+                        96...191 => 0b110, // pclk/128
+                        _ => 0b111, // pclk/256
                     };
 
-                    // CPHA: phase
-                    // CPOL: polarity
-                    // MSTR: master mode
-                    // BR: 1 MHz
-                    // SPE: SPI disabled
-                    // LSBFIRST: MSB first
-                    // SSM: enable software slave management (NSS pin free for other uses)
-                    // SSI: set nss high = master mode
-                    // CRCEN: hardware CRC calculation disabled
-                    // BIDIMODE: 2 line unidirectional (full duplex)
-                    spi.cr1.write(|w| unsafe {
-                        w.cpha()
-                            .bit(mode.phase == Phase::CaptureOnSecondTransition)
-                            .cpol()
-                            .bit(mode.polarity == Polarity::IdleHigh)
-                            .mstr()
-                            .set_bit()
-                            .br()
-                            .bits(br)
-                            .spe()
-                            .set_bit()
-                            .lsbfirst()
-                            .clear_bit()
-                            .ssi()
-                            .set_bit()
-                            .ssm()
-                            .set_bit()
-                            .crcen()
-                            .clear_bit()
-                            .bidimode()
-                            .clear_bit()
+                    // mstr: master configuration
+                    // lsbfirst: MSB first
+                    // ssm: enable software slave management (NSS pin free for other uses)
+                    // ssi: set nss high = master mode
+                    // bidimode: 2-line unidirectional
+                    // spe: enable the SPI bus
+                    spi.cr1.write(|w| {
+                        w.cpha().bit(mode.phase == Phase::CaptureOnSecondTransition)
+                        .cpol().bit(mode.polarity == Polarity::IdleHigh)
+                        .mstr().set_bit()
+                        .br().bits(br)
+                        .lsbfirst().clear_bit()
+                        .ssm().set_bit()
+                        .ssi().set_bit()
+                        .rxonly().clear_bit()
+                        //
+                        // transit-only
+                        .bidioe().set_bit()
+                        .bidimode().set_bit()
+                        //
+                        .spe().set_bit()
                     });
 
-                    spi.cr2.write(|w| unsafe {
-                        w.ds().bits(0b111)
-                    });
+                    // ds: 8 bit frames
+                    spi.cr2.write(|w| { unsafe { w
+                        .ds().bits(0b111)
+                    }});
 
+                    // TODO - forcing tx only until a proper half-duplex impl is done
                     Spi { spi, pins }
                 }
 
-                /// Releases the SPI peripheral and associated pins
                 pub fn free(self) -> ($SPIX, (SCK, MISO, MOSI)) {
                     (self.spi, self.pins)
                 }
@@ -188,6 +175,7 @@ macro_rules! hal {
                         nb::Error::WouldBlock
                     })
                 }
+
             }
 
             impl<SCK, MISO, MOSI> crate::hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, (SCK, MISO, MOSI)> {}
@@ -198,8 +186,7 @@ macro_rules! hal {
 }
 
 hal! {
-    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
-    SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
-    SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
+    SPI1: (spi1, spi1en, spi1rst, APB2),
+    SPI2: (spi2, spi2en, spi2rst, APB1),
+    SPI3: (spi3, spi3en, spi3rst, APB1),
 }
- 
