@@ -148,7 +148,7 @@ macro_rules! hal {
                 }
             }
 
-            impl<PINS> FullDuplex<u8> for Spi<$SPIX, PINS> {
+            impl<SCK, MISO, MOSI> FullDuplex<u8> for Spi<$SPIX, (SCK, MISO, MOSI)> {
                 type Error = Error;
 
                 fn read(&mut self) -> nb::Result<u8, Error> {
@@ -190,9 +190,9 @@ macro_rules! hal {
                 }
             }
 
-            impl<PINS> crate::hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, PINS> {}
+            impl<SCK, MISO, MOSI> crate::hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, (SCK, MISO, MOSI)> {}
 
-            impl<PINS> crate::hal::blocking::spi::write::Default<u8> for Spi<$SPIX, PINS> {}
+            impl<SCK, MISO, MOSI> crate::hal::blocking::spi::write::Default<u8> for Spi<$SPIX, (SCK, MISO, MOSI)> {}
         )+
     }
 }
