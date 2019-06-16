@@ -1,6 +1,6 @@
 //! # Reset & Control Clock
 
-use crate::pac::{FLASH, RCC};
+use crate::pac::{rcc, FLASH, RCC};
 
 use crate::time::Hertz;
 
@@ -13,6 +13,11 @@ pub trait RccExt {
 impl RccExt for RCC {
     fn constrain(self) -> Rcc {
         Rcc {
+            ahb1: AHB1 { _0: () },
+            ahb2: AHB2 { _0: () },
+            ahb3: AHB3 { _0: () },
+            apb1: APB1 { _0: () },
+            apb2: APB2 { _0: () },
             cfgr: CFGR {
                 hclk: None,
                 pclk1: None,
@@ -25,10 +30,99 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 pub struct Rcc {
+    pub ahb1: AHB1,
+    pub ahb2: AHB2,
+    pub ahb3: AHB3,
+    pub apb1: APB1,
+    pub apb2: APB2,
     pub cfgr: CFGR,
 }
 
 const HSI: u32 = 16_000_000; // Hz
+
+/// AMBA High-performance Bus 1 (AHB1) registers
+pub struct AHB1 {
+    _0: (),
+}
+
+impl AHB1 {
+    pub(crate) fn enr(&mut self) -> &rcc::AHB1ENR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb1enr }
+    }
+
+    pub(crate) fn rstr(&mut self) -> &rcc::AHB1RSTR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb1rstr }
+    }
+}
+
+pub struct AHB2 {
+    _0: (),
+}
+
+impl AHB2 {
+    pub(crate) fn enr(&mut self) -> &rcc::AHB2ENR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb2enr }
+    }
+
+    pub(crate) fn rstr(&mut self) -> &rcc::AHB2RSTR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb2rstr }
+    }
+}
+
+/// AMBA High-performance Bus 3 (AHB3) registers
+pub struct AHB3 {
+    _0: (),
+}
+
+impl AHB3 {
+    pub(crate) fn enr(&mut self) -> &rcc::AHB3ENR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb3enr }
+    }
+
+    pub(crate) fn rstr(&mut self) -> &rcc::AHB3RSTR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).ahb3rstr }
+    }
+}
+
+/// Advanced Peripheral Bus 1 (APB1) registers
+pub struct APB1 {
+    _0: (),
+}
+
+impl APB1 {
+    pub(crate) fn enr(&mut self) -> &rcc::APB1ENR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).apb1enr }
+    }
+
+    pub(crate) fn rstr(&mut self) -> &rcc::APB1RSTR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).apb1rstr }
+    }
+}
+
+/// Advanced Peripheral Bus 2 (APB2) registers
+pub struct APB2 {
+    _0: (),
+}
+
+impl APB2 {
+    pub(crate) fn enr(&mut self) -> &rcc::APB2ENR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).apb2enr }
+    }
+
+    pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).apb2rstr }
+    }
+}
 
 pub struct CFGR {
     hclk: Option<u32>,

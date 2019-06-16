@@ -1,6 +1,6 @@
 #![no_std]
 
-use embedded_hal as hal;
+pub use embedded_hal as hal;
 
 pub use stm32f7::stm32f7x7 as pac;
 
@@ -13,5 +13,6 @@ pub mod i2c;
 pub mod prelude;
 pub mod rcc;
 pub mod serial;
+pub mod spi;
 pub mod time;
 pub mod timer; 
