@@ -1,8 +1,18 @@
-//! # Reset & Control Clock
+//! Reset & Control Clock
 
-use crate::pac::{rcc, FLASH, RCC};
+use crate::stm32::{RCC, FLASH};
 
 use crate::time::Hertz;
+
+/// LSI clock frequency is approximately 32 KHz.
+///
+/// Note - this is not very accurate.
+/// It is recommended to use TIM5 to measure the LSI frequency
+/// for accurate
+pub const LSI: u32 = 32_000_000;
+
+/// HSI default clock speed is 16 MHz
+pub const HSI: u32 = 16_000_000;
 
 /// Extension trait that constrains the `RCC` peripheral
 pub trait RccExt {
@@ -13,11 +23,6 @@ pub trait RccExt {
 impl RccExt for RCC {
     fn constrain(self) -> Rcc {
         Rcc {
-            ahb1: AHB1 { _0: () },
-            ahb2: AHB2 { _0: () },
-            ahb3: AHB3 { _0: () },
-            apb1: APB1 { _0: () },
-            apb2: APB2 { _0: () },
             cfgr: CFGR {
                 hclk: None,
                 pclk1: None,
@@ -30,100 +35,12 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 pub struct Rcc {
-    pub ahb1: AHB1,
-    pub ahb2: AHB2,
-    pub ahb3: AHB3,
-    pub apb1: APB1,
-    pub apb2: APB2,
+    /// Clock configuration
     pub cfgr: CFGR,
 }
 
-const HSI: u32 = 16_000_000; // Hz
 
-/// AMBA High-performance Bus 1 (AHB1) registers
-pub struct AHB1 {
-    _0: (),
-}
-
-impl AHB1 {
-    pub(crate) fn enr(&mut self) -> &rcc::AHB1ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb1enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::AHB1RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb1rstr }
-    }
-}
-
-pub struct AHB2 {
-    _0: (),
-}
-
-impl AHB2 {
-    pub(crate) fn enr(&mut self) -> &rcc::AHB2ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb2enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::AHB2RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb2rstr }
-    }
-}
-
-/// AMBA High-performance Bus 3 (AHB3) registers
-pub struct AHB3 {
-    _0: (),
-}
-
-impl AHB3 {
-    pub(crate) fn enr(&mut self) -> &rcc::AHB3ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb3enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::AHB3RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahb3rstr }
-    }
-}
-
-/// Advanced Peripheral Bus 1 (APB1) registers
-pub struct APB1 {
-    _0: (),
-}
-
-impl APB1 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB1ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::APB1RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1rstr }
-    }
-}
-
-/// Advanced Peripheral Bus 2 (APB2) registers
-pub struct APB2 {
-    _0: (),
-}
-
-impl APB2 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB2ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2rstr }
-    }
-}
-
+/// Clock configuration
 pub struct CFGR {
     hclk: Option<u32>,
     pclk1: Option<u32>,
@@ -132,6 +49,7 @@ pub struct CFGR {
 }
 
 impl CFGR {
+    /// Sets a frequency for the AHB bus
     pub fn hclk<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -140,6 +58,7 @@ impl CFGR {
         self
     }
 
+    /// Sets a frequency for the APB1 bus
     pub fn pclk1<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -148,6 +67,7 @@ impl CFGR {
         self
     }
 
+    /// Sets a frequency for the APB2 bus
     pub fn pclk2<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -156,6 +76,7 @@ impl CFGR {
         self
     }
 
+    /// Sets the system (core) frequency
     pub fn sysclk<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -164,9 +85,128 @@ impl CFGR {
         self
     }
 
-    pub fn freeze(self) -> Clocks {
-        let flash = unsafe { &(*FLASH::ptr()) };
+    // @brief  System Clock Configuration
+    //         The system Clock is configured as follow :
+    //            System Clock source            = PLL (HSE)
+    //            SYSCLK(Hz)                     = 216000000
+    //            HCLK(Hz)                       = 216000000
+    //            AHB Prescaler                  = 1
+    //            APB1 Prescaler                 = 4
+    //            APB2 Prescaler                 = 2
+    //            HSE Frequency(Hz)              = 25000000
+    //            PLL_M                          = 8
+    //            PLL_N                          = 432
+    //            PLL_P                          = 2
+    //            PLL_Q                          = 9
+    //            PLL_R                          = 7
+    //            VDD(V)                         = 3.3
+    //            Main regulator output voltage  = Scale1 mode
+    //            Flash Latency(WS)              = 7
+    //
+    // TODO - configs/timeout/result?
+    /*
+    pub fn freeze_max(self, acr: &mut ACR) -> Clocks {
         let rcc = unsafe { &*RCC::ptr() };
+        let pll_m = 8;
+        let pll_n = 432;
+        let pll_q = 9;
+        let pll_r = 7;
+
+        // enable power control clock
+        rcc.apb1enr.modify(|_, w| w.pwren().set_bit());
+
+        // TODO - needed?
+        // enable voltage scaling
+
+        // enable HSE oscillator and activate PLL with HSE as source
+        rcc.cr.modify(|_, w| w.hseon().set_bit());
+
+        // wait until HSE is ready
+        while rcc.cr.read().hserdy().bit() == false {}
+
+        // if the PLL is not used as system clock
+        if rcc.cfgr.read().sws().bits() != 0b10 {
+            // disable main PLL
+            rcc.cr.modify(|_, w| w.pllon().clear_bit());
+
+            // configure main PLL clock source
+            rcc.pllcfgr.modify(|_, w| unsafe {
+                w
+                    // HSE PLL source
+                    .pllsrc()
+                    .set_bit()
+                    .pllm()
+                    .bits(pll_m)
+                    .plln()
+                    .bits(pll_n)
+                    // PLLP_DIV2
+                    .pllp()
+                    .bits(0b00)
+                    .pllq()
+                    .bits(pll_q)
+                    .pllr()
+                    .bits(pll_r)
+            });
+
+            // enable main PLL
+            rcc.cr.modify(|_, w| w.pllon().set_bit());
+
+            // wait until PLL is ready
+            while rcc.cr.read().pllrdy().bit() == false {}
+        }
+
+        // TODO - not neede for voltage scale 1?
+        // activate OverDrive
+        // HAL_PWREx_EnableOverDrive
+
+        // set flash latency wait states
+        acr.acr().modify(|_, w| w.latency().bits(7));
+
+        // TODO - should read back out and check?
+
+        // HCLK config
+        // no prescaler
+        rcc.cfgr.modify(|_, w| unsafe { w.hpre().bits(0b0000) });
+
+        // SYSCLK config
+        // wait for PLL ready
+        while rcc.cr.read().pllrdy().bit() == false {}
+        // set clock source, PLL
+        rcc.cfgr.modify(|_, w| unsafe { w.sw().bits(0b10) });
+
+        // wait for it
+        while rcc.cfgr.read().sws().bits() != 0b10 {}
+
+        rcc.cfgr.modify(|_, w| unsafe {
+            w
+                // PCLK1, DIV4
+                .ppre1()
+                .bits(0b101)
+                // PCLK2, DIV2
+                .ppre2()
+                .bits(0b100)
+        });
+
+        // TODO
+        let sysclk = 216_000_000;
+        let hclk = sysclk;
+        let ppre1: u32 = 4;
+        let ppre2: u32 = 2;
+
+        Clocks {
+            hclk: Hertz(hclk),
+            pclk1: Hertz(hclk / ppre1),
+            pclk2: Hertz(hclk / ppre2),
+            ppre1: ppre1 as _,
+            ppre2: ppre2 as _,
+            sysclk: Hertz(sysclk),
+        }
+    }*/
+
+    /// Freezes the clock configuration, making it effective
+    pub fn freeze(self) -> Clocks {
+        let rcc = unsafe { &*RCC::ptr() };
+        let flash = unsafe { &*FLASH::ptr() };
 
         let sysclk = self.sysclk.unwrap_or(HSI);
         let hclk = self.hclk.unwrap_or(HSI);
@@ -388,3 +428,35 @@ impl Clocks {
         self.sysclk
     }
 } 
+
+/// TODO
+#[derive(Copy, Clone, Debug)]
+pub struct ResetConditions {
+    pub low_power: bool,
+    pub window_watchdog: bool,
+    pub independent_watchdog: bool,
+    pub software: bool,
+    pub por_pdr: bool,
+    pub pin: bool,
+    pub bor: bool,
+}
+
+impl ResetConditions {
+    pub fn read_and_clear() -> Self {
+        let csr = unsafe { &(*RCC::ptr()).csr };
+        let rc = ResetConditions {
+            low_power: csr.read().lpwrrstf().bit(),
+            window_watchdog: csr.read().wwdgrstf().bit(),
+            independent_watchdog: csr.read().wdgrstf().bit(),
+            software: csr.read().sftrstf().bit(),
+            por_pdr: csr.read().porrstf().bit(),
+            pin: csr.read().padrstf().bit(),
+            bor: csr.read().borrstf().bit(),
+        };
+
+        // clear the reset flags
+        csr.modify(|_, w| w.rmvf().set_bit());
+
+        rc
+    }
+}
