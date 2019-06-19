@@ -1,21 +1,20 @@
- 
 //! Timers
 
-use embedded_hal::timer::{CountDown, Periodic};
-
+use cast::{u16, u32};
 use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m::peripheral::SYST;
-
-use cast::{u16, u32};
+use embedded_hal::timer::{CountDown, Periodic};
+use nb;
 use void::Void;
 
-use crate::pac::RCC;
-use crate::rcc::Clocks;
-use crate::time::Hertz;
+use crate::stm32::RCC;
 
-use crate::pac::{
+use crate::stm32::{
     TIM1, TIM10, TIM11, TIM12, TIM13, TIM14, TIM2, TIM3, TIM4, TIM5, TIM6, TIM7, TIM8, TIM9,
 };
+
+use crate::rcc::Clocks;
+use crate::time::Hertz;
 
 /// Hardware timers
 pub struct Timer<TIM> {
@@ -92,7 +91,7 @@ macro_rules! hal {
                 where
                     T: Into<Hertz>,
                 {
-                    // Enable and reset peripheral to a clean slate state
+                    // enable and reset peripheral to a clean slate state
                     let rcc = unsafe { &(*RCC::ptr()) };
                     rcc.$apbenr.modify(|_, w| w.$timXen().set_bit());
                     rcc.$apbrstr.modify(|_, w| w.$timXrst().set_bit());
@@ -102,7 +101,6 @@ macro_rules! hal {
                         clocks,
                         tim,
                     };
-
                     timer.start(timeout);
 
                     timer
@@ -126,16 +124,6 @@ macro_rules! hal {
                             self.tim.dier.write(|w| w.uie().clear_bit());
                         }
                     }
-                }
-
-                /// Stops the timer
-                pub fn stop(&mut self) {
-                    self.tim.cr1.modify(|_, w| w.cen().clear_bit());
-                }
-
-                /// Clears Update Interrupt Flag
-                pub fn clear_update_interrupt_flag(&mut self) {
-                    self.tim.sr.modify(|_, w| w.uif().clear_bit());
                 }
 
                 /// Releases the TIM peripheral
@@ -189,17 +177,17 @@ macro_rules! hal {
 
 hal! {
     TIM1: (tim1, tim1en, tim1rst, apb2enr, apb2rstr, pclk2, ppre2),
+    TIM5: (tim5, tim5en, tim5rst, apb1enr, apb1rstr, pclk1, ppre1),
+    TIM9: (tim9, tim9en, tim9rst, apb2enr, apb2rstr, pclk1, ppre1),
+    TIM11: (tim11, tim11en, tim11rst, apb2enr, apb2rstr, pclk2, ppre2),
     TIM2: (tim2, tim2en, tim2rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM3: (tim3, tim3en, tim3rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM4: (tim4, tim4en, tim4rst, apb1enr, apb1rstr, pclk1, ppre1),
-    TIM5: (tim5, tim5en, tim5rst, apb1enr, apb1rstr, pclk1, ppre1),
+    TIM10: (tim10, tim10en, tim10rst, apb2enr, apb2rstr, pclk2, ppre2),
     TIM6: (tim6, tim6en, tim6rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM7: (tim7, tim7en, tim7rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM8: (tim8, tim8en, tim8rst, apb2enr, apb2rstr, pclk2, ppre2),
-    TIM9: (tim9, tim9en, tim9rst, apb2enr, apb2rstr, pclk2, ppre2),
-    TIM10: (tim10, tim10en, tim10rst, apb2enr, apb2rstr, pclk2, ppre2),
-    TIM11: (tim11, tim11en, tim11rst, apb2enr, apb2rstr, pclk2, ppre2),
     TIM12: (tim12, tim12en, tim12rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM13: (tim13, tim13en, tim13rst, apb1enr, apb1rstr, pclk1, ppre1),
     TIM14: (tim14, tim14en, tim14rst, apb1enr, apb1rstr, pclk1, ppre1),
-} 
+}
