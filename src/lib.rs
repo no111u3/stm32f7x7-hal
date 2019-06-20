@@ -24,6 +24,6 @@ pub mod serial;
 pub mod spi;
 pub mod time;
 pub mod timer;
-// TODO: pub mod watchdog;
+pub mod watchdog;
 // TODO: pub mod adc;
 // TODO: pub mod signature;
