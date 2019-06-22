@@ -1,6 +1,6 @@
 [package]
 name = "stm32f7x7-hal"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Boris Vinogradov <no111u3@gmail.com>"]
 edition = "2018"
 categories = ["embedded", "hardware-support", "no-std"]
