@@ -390,6 +390,9 @@ where
 {
     pub fn init(self, mode: Mode, freq: Hertz, clock: Hertz) -> Self
     {
+        // disable the SPI peripheral
+        self.spi.cr1.write(|w| w.spe().clear_bit());
+    
         // disable SS output
         self.spi.cr2.write(|w| w.ssoe().clear_bit());
 
@@ -405,6 +408,15 @@ where
             _ => 0b111,
         };
 
+        // ds: 8 bit frames (0b111)
+        // frxth: event is generated for FIFO level >= 1/4 (8-bit)
+        self.spi.cr2.write(|w| { unsafe { w
+            .ds()
+            .bits(0b111)
+            .frxth()
+            .set_bit()
+        }});
+        
         // mstr: master configuration
         // lsbfirst: MSB first
         // ssm: enable software slave management (NSS pin free for other uses)
@@ -429,6 +441,8 @@ where
             .rxonly()
             .clear_bit()
             .bidimode()
+            .clear_bit()
+            .bidioe()
             .clear_bit()
             .spe()
             .set_bit()
