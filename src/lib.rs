@@ -14,6 +14,7 @@ pub use nb::block;
 #[cfg(feature = "rt")]
 pub use crate::stm32::interrupt;
 
+pub mod adc;
 pub mod delay;
 pub mod gpio;
 pub mod i2c;
@@ -26,4 +27,3 @@ pub mod spi;
 pub mod time;
 pub mod timer;
 pub mod watchdog;
-// TODO: pub mod adc;
