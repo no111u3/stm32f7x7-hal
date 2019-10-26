@@ -1001,7 +1001,7 @@ macro_rules! adc {
             }
         )+
     };
-} 
+}
 
 adc!(ADC1 => (adc1, ADC_COMMON, apb2enr, adc1en, apb2rstr, adcrst));
 adc!(ADC2 => (adc2, ADC_COMMON, apb2enr, adc2en, apb2rstr, adcrst));

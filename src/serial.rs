@@ -3,23 +3,23 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::ptr;
 
-use embedded_hal::serial;
 use embedded_hal::prelude::*;
+use embedded_hal::serial;
 use nb::block;
 
 use crate::hal::serial::Write;
 
-use crate::stm32::{RCC, UART4, UART5, USART1, USART2, USART3, USART6, UART7, UART8};
+use crate::stm32::{RCC, UART4, UART5, UART7, UART8, USART1, USART2, USART3, USART6};
 
-use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA8, PA9, PA10, PA11, PA12, PA15};
-use crate::gpio::gpiob::{PB3, PB4, PB10, PB11, PB12, PB13, PB5, PB6, PB7, PB8, PB9};
-use crate::gpio::gpioc::{PC5, PC10, PC11, PC12, PC6, PC7};
-use crate::gpio::gpiod::{PD0, PD1, PD2, PD5, PD6, PD8, PD9, PD10};
+use crate::gpio::gpioa::{PA0, PA1, PA10, PA11, PA12, PA15, PA2, PA3, PA8, PA9};
+use crate::gpio::gpiob::{PB10, PB11, PB12, PB13, PB3, PB4, PB5, PB6, PB7, PB8, PB9};
+use crate::gpio::gpioc::{PC10, PC11, PC12, PC5, PC6, PC7};
+use crate::gpio::gpiod::{PD0, PD1, PD10, PD2, PD5, PD6, PD8, PD9};
 use crate::gpio::gpioe::{PE0, PE1, PE7, PE8};
 use crate::gpio::gpiof::{PF6, PF7, PF8, PF9};
 use crate::gpio::gpiog::{PG0, PG1, PG11, PG12, PG14, PG9};
 use crate::gpio::gpioh::{PH13, PH14};
-use crate::gpio::{Alternate, AF7, AF8, AF11};
+use crate::gpio::{Alternate, AF11, AF7, AF8};
 use crate::rcc::Clocks;
 use crate::time::Bps;
 
@@ -142,7 +142,8 @@ impl<USART, TX, RX> Pins<USART> for (TX, RX)
 where
     TX: PinTx<USART>,
     RX: PinRx<USART>,
-{}
+{
+}
 
 /// A filler type for when the Tx pin is unnecessary
 pub struct NoTx;
@@ -528,7 +529,6 @@ halUsart! {
     USART6: (usart6, apb2enr, usart6en, pclk2),
 }
 
-
 halUsart! {
     USART3: (usart3, apb1enr, usart3en, pclk1),
 }
@@ -543,18 +543,12 @@ halUsart! {
     UART8: (uart8, apb1enr, uart8en, pclk1),
 }
 
-
 impl<USART> fmt::Write for Tx<USART>
 where
     Tx<USART>: serial::Write<u8>,
 {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        let _ = s
-            .as_bytes()
-            .iter()
-            .map(|c| block!(self.write(*c)))
-            .last();
+        let _ = s.as_bytes().iter().map(|c| block!(self.write(*c))).last();
         Ok(())
     }
 }
-

@@ -10,11 +10,11 @@ use crate::stm32::{I2C1, I2C2, I2C3, RCC};
 use crate::hal::blocking::i2c::{Read, Write, WriteRead};
 
 use crate::gpio::{
-    gpioa::{PA8},
-    gpiob::{PB3, PB4, PB6, PB7, PB8, PB9, PB10, PB11},
-    gpioc::{PC9, PC12},
+    gpioa::PA8,
+    gpiob::{PB10, PB11, PB3, PB4, PB6, PB7, PB8, PB9},
+    gpioc::{PC12, PC9},
     gpiof::{PF0, PF1},
-    gpioh::{PH4, PH5, PH7, PH8}
+    gpioh::{PH4, PH5, PH7, PH8},
 };
 use crate::gpio::{Alternate, AF4, AF9};
 
@@ -35,7 +35,8 @@ impl<I2c, SCL, SDA> Pins<I2c> for (SCL, SDA)
 where
     SCL: PinScl<I2c>,
     SDA: PinSda<I2c>,
-{}
+{
+}
 
 impl PinScl<I2C1> for PB6<Alternate<AF4>> {}
 impl PinSda<I2C1> for PB7<Alternate<AF4>> {}

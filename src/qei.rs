@@ -12,7 +12,7 @@ use crate::gpio::gpioh::*;
 use crate::gpio::gpioi::*;
 use crate::gpio::{Alternate, AF1, AF2, AF3};
 
-use crate::stm32::{TIM1, TIM5, TIM2, TIM3, TIM4, TIM8};
+use crate::stm32::{TIM1, TIM2, TIM3, TIM4, TIM5, TIM8};
 
 pub trait Pins<TIM> {}
 pub trait PinC1<TIM> {}

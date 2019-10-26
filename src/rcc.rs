@@ -1,6 +1,6 @@
 //! Reset & Control Clock
 
-use crate::stm32::{RCC, FLASH};
+use crate::stm32::{FLASH, RCC};
 
 use crate::time::Hertz;
 
@@ -38,7 +38,6 @@ pub struct Rcc {
     /// Clock configuration
     pub cfgr: CFGR,
 }
-
 
 /// Clock configuration
 pub struct CFGR {
@@ -427,7 +426,7 @@ impl Clocks {
     pub fn sysclk(&self) -> Hertz {
         self.sysclk
     }
-} 
+}
 
 /// TODO
 #[derive(Copy, Clone, Debug)]
